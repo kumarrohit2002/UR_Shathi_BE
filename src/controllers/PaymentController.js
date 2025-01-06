@@ -13,7 +13,7 @@ const razorpay = new Razorpay({
 exports.payment_checkout = async (req, res) => {
     try {
         const { name, amount } = req.body;
-        console.log(name + " " + amount);
+
         if (!name || !amount) {
             return res.status(400).json({
                 success: false,
