@@ -5,6 +5,11 @@
             "use":"@vercel/node"
         }
     ],
+    "functions": {
+    "src/controllers/authController.js": {
+      "maxDuration": 300
+    }
+  },
     "routes":[
         {
             "src":"/(.*)",
