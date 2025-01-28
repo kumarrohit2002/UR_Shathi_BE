@@ -53,8 +53,8 @@ app.use('/api',mentorRoutes);
 
 
 //activation server
-app.listen(PORT,()=>{
-    db.connect();  // database connection
+app.listen(PORT,async()=>{
+    await db();  // database connection
     console.log(`listening on port no : http://localhost:${PORT}`);
 });
 
