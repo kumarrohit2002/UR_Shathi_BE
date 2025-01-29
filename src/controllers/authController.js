@@ -19,6 +19,7 @@ exports.signup = async (req, res) => {
                 message: 'All fields are required!',
             });
         }
+
         const existingUser = await User.findOne({ email });
         const existingTempUser = await TempUser.findOne({ email });
 
@@ -29,9 +30,9 @@ exports.signup = async (req, res) => {
             });
         }
 
-        const hashPassword = bcrypt.hash(password, 10);
+        const hashPassword = await bcrypt.hash(password, 10); // Ensure hashing completes before proceeding
         const otp = crypto.randomInt(1000, 9999).toString();
-        const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+        const otpExpires = Date.now() + 10 * 60 * 1000;
 
         let tempUser;
         if (existingTempUser) {
@@ -39,11 +40,6 @@ exports.signup = async (req, res) => {
             tempUser.otpExpires = otpExpires;
             tempUser.otp = otp;
             await tempUser.save();
-            return res.status(200).json({
-                success: true,
-                message: 'OTP resent. Please check your email.',
-                user: tempUser,
-            });
         } else {
             tempUser = await TempUser.create({
                 name,
@@ -55,6 +51,7 @@ exports.signup = async (req, res) => {
             });
         }
 
+        console.log('Preparing to send email...');
         const subject = 'Email Verification OTP';
         const text = `Your OTP for email verification is: ${otp}`;
         const html = `<p>OTP is valid for 10 minutes</p>
@@ -67,7 +64,7 @@ exports.signup = async (req, res) => {
             success: true,
             message: 'User registered. Please verify your email using the OTP sent to you.',
             user: tempUser,
-            otp:otp
+            otp: otp, // Temporarily sending OTP for debugging (Remove in production)
         });
     } catch (error) {
         console.error('Error in SignUp:', error.message);
@@ -77,6 +74,7 @@ exports.signup = async (req, res) => {
         });
     }
 };
+
 
 // Resend OTP controller
 exports.resendOTP = async (req, res) => {
