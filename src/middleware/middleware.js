@@ -2,10 +2,12 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
 
 exports.middleware = async (req, res, next) => {
-    let token;
+    // let token=req.cookies.token || req.headers.authorization.split(' ')[1];
+    let token=req.cookies.token;
+
 
     // Retrieve the token from the cookie
-    if (req.cookies.token) {
+    if (token) {
         token = req.cookies.token;
 
         try {
@@ -13,7 +15,6 @@ exports.middleware = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             // Attach the user object to the request, excluding the password field
             req.user = await User.findById(decoded.id).select('-password');
-
             // Proceed to the next middleware
             next();
         } catch (error) {

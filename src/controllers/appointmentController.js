@@ -81,11 +81,12 @@ exports.BookAppointment = async (req, res) => {
 
 exports.myBooking = async (req, res) => {
     try {
-        const userProfileId = req.user.userProfile._id; // Ensure userProfile is fetched correctly
+        
+        const userId = req.user._id; 
 
         // Fetch the user's bookings
-        const myBookings = await Appointment.find({ user: userProfileId })
-            .populate('mentor', 'name title profilePic'); // Populate mentor details
+        const myBookings = await Appointment.find({ user: userId })
+            .populate('mentor', 'name title profilePic');
 
         if (!myBookings || myBookings.length === 0) {
             return res.status(404).json({
@@ -97,7 +98,7 @@ exports.myBooking = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Fetched bookings successfully',
-            myBookings: myBookings, // Return the list of bookings with populated mentor data
+            myBookings: myBookings, 
         });
 
     } catch (error) {

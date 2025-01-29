@@ -5,8 +5,14 @@ const MentorProfile = require('../models/MentorProfile.model');
 exports.createUserProfile = async (req, res) => {
     try {
         const user = req.user;
+        if (!user || !user._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized! User not found.",
+            });
+        }
         const { name, email, phoneNo, address, aboutSection } = req.body;
-        // Validate that all required fields are provided
+
         if (!name || !email || !phoneNo || !address || !aboutSection) {
             return res.status(400).json({
                 success: false,
@@ -14,16 +20,10 @@ exports.createUserProfile = async (req, res) => {
             });
         }
 
-        let userProfile;
-        // Check if the user already has a profile
-        if (user.userProfile) {
-            userProfile = await UserProfile.findById(user.userProfile);
-            if (!userProfile) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User profile not found!',
-                });
-            }
+        let userProfile = await UserProfile.findOne({ user: user._id });
+
+        if (userProfile) {
+            // Update existing profile
             userProfile.name = name;
             userProfile.email = email;
             userProfile.phoneNo = phoneNo;
@@ -35,11 +35,11 @@ exports.createUserProfile = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 message: 'Profile updated successfully!',
-                userProfile: userProfile,
+                userProfile,
             });
         } else {
-            // If the user does not have a profile, create one
-            userProfile = await UserProfile.create({
+            userProfile = new UserProfile({
+                user: user._id,  
                 name,
                 email,
                 phoneNo,
@@ -47,14 +47,15 @@ exports.createUserProfile = async (req, res) => {
                 aboutSection,
             });
 
-            // Link the created profile to the user
+            await userProfile.save();
+
             user.userProfile = userProfile._id;
             await user.save();
 
             return res.status(201).json({
                 success: true,
                 message: 'Profile created successfully!',
-                userProfile: userProfile,
+                userProfile,
             });
         }
     } catch (error) {
@@ -66,12 +67,12 @@ exports.createUserProfile = async (req, res) => {
     }
 };
 
+
 // Get User Profile Data
 exports.getUserProfileData = async (req, res) => {
     try {
         const user = req.user;
-        console.log(user);
-        const userProfile=await UserProfile.find({user:user._id});
+        const userProfile=await UserProfile.findOne({user:user._id});
 
         if (!userProfile) {
             return res.status(404).json({
