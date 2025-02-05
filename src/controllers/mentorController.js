@@ -6,23 +6,21 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
     try {
         const user = req.user;
         const {
-            name, dob, title, areaOfExpertise, yearsOfExperience, skills, aboutSection,
+            name, title,dob, areaOfExpertise, yearsOfExperience, skills, aboutSection,
             achievements, socialMediaLinks, address, language, perHourcharge, 
             timePreferences, phone, category
         } = req.body;
 
-        console.log(timePreferences);
-
-        // Validate required fields
         if (!name || !title || !yearsOfExperience || !skills || !aboutSection || !achievements || !socialMediaLinks ||
             !address || !areaOfExpertise || !language || !perHourcharge || !phone || !category || !timePreferences) {
+                
+            console.log("All field are required!!!!!");
             return res.status(400).json({
                 success: false,
                 message: "All fields are required!!",
             });
         }
 
-        // Optional: Validate timePreferences if provided
         if (timePreferences && timePreferences.length > 0) {
             const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const isValidTimePreferences = timePreferences.every(preference =>
@@ -40,7 +38,6 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
         let mentorProfile;
         let message;
 
-        // Check if the mentor profile already exists
         if (user.mentorProfile) {
             // Update the existing mentor profile
             mentorProfile = await MentorProfile.findByIdAndUpdate(
@@ -50,7 +47,7 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
                     aboutSection, achievements, socialMediaLinks, address, language,
                     perHourcharge, timePreferences, phone, category
                 },
-                { new: true } // Return the updated document
+                { new: true } 
             );
             message = 'Mentor profile updated successfully';
         } else {
@@ -130,8 +127,6 @@ exports.getAllMentorProfiles = async (req, res) => {
 };
 
 
-
-
 // // Get all MentorProfiles with average rating and number of reviews
 // exports.getAllMentorProfiles = async (req, res) => {
 //     try {
@@ -168,7 +163,6 @@ exports.getAllMentorProfiles = async (req, res) => {
 //         });
 //     }
 // };
-
 
 
 exports.getMentorProfileById=async (req, res) => {
