@@ -6,7 +6,7 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
     try {
         const user = req.user;
         const {
-            name, title,dob, areaOfExpertise, yearsOfExperience, skills, aboutSection,
+            name, title, dob, areaOfExpertise, yearsOfExperience, skills, aboutSection,
             achievements, socialMediaLinks, address, language, perHourcharge, 
             timePreferences, phone, category
         } = req.body;
@@ -21,25 +21,11 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
             });
         }
 
-        if (timePreferences && timePreferences.length > 0) {
-            const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            const isValidTimePreferences = timePreferences.every(preference =>
-                validDays.includes(preference.day) && preference.times.every(t => t.time && ['AM', 'PM'].includes(t.ampm))
-            );
-
-            if (!isValidTimePreferences) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid time preferences format",
-                });
-            }
-        }
-
         let mentorProfile;
         let message;
 
         if (user.mentorProfile) {
-            // Update the existing mentor profile
+            // Update existing mentor profile
             mentorProfile = await MentorProfile.findByIdAndUpdate(
                 user.mentorProfile,
                 {
@@ -47,7 +33,7 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
                     aboutSection, achievements, socialMediaLinks, address, language,
                     perHourcharge, timePreferences, phone, category
                 },
-                { new: true } 
+                { new: true, runValidators: true } // Ensures validation runs
             );
             message = 'Mentor profile updated successfully';
         } else {
@@ -58,7 +44,8 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
                 aboutSection, achievements, socialMediaLinks, address, language,
                 perHourcharge, timePreferences, phone, category
             });
-            // Add mentor profile reference to user data
+
+            // Update user with mentor profile reference
             user.mentorProfile = mentorProfile._id;
             await user.save();
             message = 'Mentor profile created successfully';

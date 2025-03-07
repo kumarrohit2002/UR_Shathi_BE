@@ -43,8 +43,8 @@ exports.BookAppointment = async (req, res) => {
 
         // Check if the user has already booked an appointment with the same mentor at this time
         const existingUserAppointment = await Appointment.findOne({
-            user: userProfileId,
-            mentor: mentorProfileId,
+            userId: userProfileId,
+            mentorId: mentorProfileId,
             slot: slot
         });
 
@@ -57,8 +57,8 @@ exports.BookAppointment = async (req, res) => {
 
         // Create a new appointment if no existing appointment is found
         const slip = await Appointment.create({
-            user: userProfileId,
-            mentor: mentorProfileId,
+            userId: userProfileId,
+            mentorId: mentorProfileId,
             roomNo: userProfileId, // Assuming roomNo is linked to the userProfile
             slot,
             phone,
@@ -79,14 +79,14 @@ exports.BookAppointment = async (req, res) => {
     }
 };
 
-exports.myBooking = async (req, res) => {
+exports.myBooking = async (req, res) => {   // for user
     try {
-        
-        const userId = req.user._id; 
+
+        const userId = req.user.userProfile; 
 
         // Fetch the user's bookings
-        const myBookings = await Appointment.find({ user: userId })
-            .populate('mentor', 'name title profilePic');
+        console.log(userId);
+        const myBookings = await Appointment.find({ userId: userId }).populate('mentorId', 'name title profilePic');;
 
         if (!myBookings || myBookings.length === 0) {
             return res.status(404).json({
@@ -110,14 +110,14 @@ exports.myBooking = async (req, res) => {
     }
 };
 
-exports.myAppointment = async (req, res) => {
+exports.myAppointment = async (req, res) => {   //for mentor
     try {
-        const mentorProfileId = req.user.mentorProfile._id;
+        const mentorProfileId = req.user.mentorProfile;
         console.log('Mentor Profile ID:', mentorProfileId);
 
         // Fetch appointments associated with the mentor profile
-        const myAppointments = await Appointment.find({ mentor: mentorProfileId })
-            .populate('user', 'profilePic name phoneNo aboutSection '); // Populate user data
+        const myAppointments = await Appointment.find({ mentorId: mentorProfileId })
+            .populate('userId', 'profilePic name phoneNo aboutSection '); // Populate user data
         if (!myAppointments || myAppointments.length === 0) {
             return res.status(404).json({
                 success: false,

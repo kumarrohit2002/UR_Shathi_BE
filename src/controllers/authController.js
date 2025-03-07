@@ -225,6 +225,8 @@ exports.login = async (req, res) => {
             maxAge: 12 * 60 * 60 * 1000, //12hr
         });
 
+        user.password=undefined;
+
         return res.status(200).json({
             success: true,
             user,

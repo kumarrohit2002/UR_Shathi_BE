@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
 const AppointmentSchema = new mongoose.Schema({
-    user: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'UserProfile',
         required: true,
     },
-    mentor: {
+    mentorId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MentorProfile',
         required: true,

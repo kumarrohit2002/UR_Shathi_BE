@@ -1,3 +1,4 @@
+const { time } = require('console');
 const mongoose = require('mongoose');
 
 const MentorProfileSchema = new mongoose.Schema({
@@ -52,23 +53,31 @@ const MentorProfileSchema = new mongoose.Schema({
         type: String,  // Add phone number field
     },
     category: {
-        type: String,  // Add category field (e.g., 'Technical', 'Business')
+        type: String,  // Add category field (e.g., 'Technical', 'Business');
     },
     reviewrating: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ReviewRating',  // Reference the ReviewRating model
     }],
-    timePreferences: [{
-        day: { 
-            type: String, 
-            enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], 
+    timePreferences: {
+        startWeekDay:{
+            type:String,  //mondey
+            required:true
         },
-        times: [{
-            time: { type: String, required: true },  // E.g., '10:00'
-            ampm: { type: String, enum: ['AM', 'PM'] }  // 'AM' or 'PM'
-        }]
-    }]
-}, { timestamps: true });  // Add timestamps to track creation and update times
+        endWeekDay:{
+            type:String,  //friday
+            required:true
+        },
+        dayStartTime:{
+            type:String,  // HH:MM
+            required:true,
+        },
+        dayEndTime:{
+            type:String,
+            required:true,
+        },
+    }
+}, { timestamps: true });  
 
 const MentorProfile = mongoose.model('MentorProfile', MentorProfileSchema);
 module.exports = MentorProfile;
