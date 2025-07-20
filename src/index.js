@@ -46,6 +46,11 @@ app.use(fileupload({
 
 
 // // route import and mount
+
+app.get('/',(req,res)=>{
+    res.send(`<h1>This is HomePage yaar</h1>`);
+})
+
 const AllRoutes=require('./routes/AllRoutes');
 app.use('/api/v1',AllRoutes);
 const mentorRoutes=require('./routes/mentorRoutes');
@@ -57,7 +62,3 @@ app.listen(PORT,async()=>{
     await db();  // database connection
     console.log(`listening on port no : http://localhost:${PORT}`);
 });
-
-app.get('/',(req,res)=>{
-    res.send(`<h1>This is HomePage yaar</h1>`);
-})

@@ -11,6 +11,9 @@ function convertToDateTime(dateTimeString) {
 
 exports.BookAppointment = async (req, res) => {
     try {
+        // payment iid
+        // file append
+        // google sheet append
         const userProfileId = req.user.userProfile;
         const userprofile = await UserProfile.findById(userProfileId);
         const phone = userprofile.phoneNo;

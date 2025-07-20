@@ -71,9 +71,9 @@ exports.payment_verification=async (req, res) => {
                 }
             );
 
-            res.redirect(`http://localhost:5173/success?payment_id=${razorpay_payment_id}`);
+            res.redirect(`${process.env.frontend_user_url}/success?payment_id=${razorpay_payment_id}`);
         } else {
-            res.redirect("http://localhost:5173/failed");
+            res.redirect(`${process.env.frontend_user_url}/failed`);
         }
 
     } catch (error) {

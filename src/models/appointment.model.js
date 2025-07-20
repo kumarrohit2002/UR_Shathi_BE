@@ -29,6 +29,11 @@ const AppointmentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    paymentDetails: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PaymentDetails',
+        required: true,
+    },
 });
 
 const Appointment = mongoose.model('Appointment', AppointmentSchema);

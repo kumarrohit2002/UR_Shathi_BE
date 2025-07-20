@@ -209,7 +209,7 @@ exports.login = async (req, res) => {
 
         // Create JWT payload
         const payload = {
-            id: user._id,
+            _id: user._id,
             email: user.email,
             role: user.role,
         };
@@ -371,3 +371,35 @@ exports.resetPassword = async (req, res) => {
         });
     }
 };
+
+
+exports.isUser=async (req, res) => {
+    try {
+        const user = req.user; // User data from middleware
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated',
+            });
+        }
+
+        if(user.role !== 'USER') {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Only users can access this route.',
+            });
+        }   
+
+        return res.status(200).json({
+            success: true,
+            message: 'User is authenticated',
+            user: user,
+        });
+    } catch (error) {
+        console.error('Error in isUser:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: `Error: ${error.message}`,
+        });
+    }
+}

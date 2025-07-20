@@ -28,7 +28,7 @@ async function deleteFileFromCloudinary(fileUrl, resourceType) {
 
 // Controller function for image upload
 async function imageUpload(req, existingImageUrl) {
-    try {
+    try { 
         if (!req.files || !req.files.imageFile) {
             throw new Error("No image file provided.");
         }
