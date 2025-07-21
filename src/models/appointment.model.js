@@ -27,7 +27,6 @@ const AppointmentSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true,
     },
     paymentDetails: {
         type: mongoose.Schema.Types.ObjectId,

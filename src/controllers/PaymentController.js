@@ -31,7 +31,7 @@ exports.payment_checkout = async (req, res) => {
         await PaymentDatails.create({
             name: name,
             amount: num,
-            order_id: order.id
+            razorpay_order_id: order.id
         });
 
         res.status(200).json({ order: order });

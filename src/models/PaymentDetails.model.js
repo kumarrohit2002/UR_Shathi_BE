@@ -7,9 +7,6 @@ const PaymentDetailsSchema=new mongoose.Schema({
     amount:{
         type: Number,
     },
-    order_id:{
-        type: String,
-    },
     razorpay_payment_id:{
         type: String,
         default:null

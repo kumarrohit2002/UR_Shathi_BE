@@ -1,6 +1,7 @@
 const Appointment = require('../models/appointment.model');
 const MentorProfile = require('../models/MentorProfile.model');
 const UserProfile = require('../models/UserProfile.model');
+const PaymentDetails = require('../models/PaymentDetails.model');
 
 function convertToDateTime(dateTimeString) {
     const [datePart, timePart] = dateTimeString.split(" ");
@@ -14,17 +15,25 @@ exports.BookAppointment = async (req, res) => {
         // payment iid
         // file append
         // google sheet append
-        const userProfileId = req.user.userProfile;
-        const userprofile = await UserProfile.findById(userProfileId);
-        const phone = userprofile.phoneNo;
-        let { mentorProfile, slot } = req.body;
+    
+        const userId = req.user._id;
+        const userprofile = await UserProfile.findOne({user: userId});
+        if(!userprofile) {
+            return res.status(404).json({
+                success: false,
+                message: 'User profile not found'
+            });
+        }
+        let { mentorProfile, slot,paymentDetails } = req.body;
         const mentorProfileId = mentorProfile._id;
+        const userProfileId=userprofile._id;
+        
 
         // Convert slot to DateTime
         slot = convertToDateTime(slot);
 
         // Validate that all required fields are present
-        if (!mentorProfileId || !userProfileId || !slot || !phone) {
+        if (!mentorProfileId || !userProfileId || !slot ) {
             return res.status(400).json({
                 success: false,
                 message: 'All fields are required for booking'
@@ -58,13 +67,22 @@ exports.BookAppointment = async (req, res) => {
             });
         }
 
+
+        const paymentData=await PaymentDetails.findOneAndUpdate({razorpay_order_id:paymentDetails.razorpay_order_id},paymentDetails);
+        if (!paymentData) {
+            return res.status(404).json({   
+                success: false,
+                message: 'Payment details not found'
+            });
+        }
+        
         // Create a new appointment if no existing appointment is found
         const slip = await Appointment.create({
             userId: userProfileId,
             mentorId: mentorProfileId,
-            roomNo: userProfileId, // Assuming roomNo is linked to the userProfile
+            roomNo: userProfileId, 
             slot,
-            phone,
+            paymentDetails:paymentData._id,
         });
 
         res.status(200).json({
@@ -85,11 +103,11 @@ exports.BookAppointment = async (req, res) => {
 exports.myBooking = async (req, res) => {   // for user
     try {
 
-        const userId = req.user.userProfile; 
-
+        const userId = req.user._id;
+        const userprofile = await UserProfile.findOne({user: userId});
         // Fetch the user's bookings
         console.log(userId);
-        const myBookings = await Appointment.find({ userId: userId }).populate('mentorId', 'name title profilePic');;
+        const myBookings = await Appointment.find({ userId: userprofile._id }).populate('mentorId', 'name title profilePic');;
 
         if (!myBookings || myBookings.length === 0) {
             return res.status(404).json({
@@ -115,7 +133,9 @@ exports.myBooking = async (req, res) => {   // for user
 
 exports.myAppointment = async (req, res) => {   //for mentor
     try {
-        const mentorProfileId = req.user.mentorProfile;
+        const userId = req.user._id;
+        const mentorProfileId=await MentorProfile.findOne({user: userId});
+
         console.log('Mentor Profile ID:', mentorProfileId);
 
         // Fetch appointments associated with the mentor profile
