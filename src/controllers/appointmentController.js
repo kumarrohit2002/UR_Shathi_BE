@@ -3,6 +3,9 @@ const MentorProfile = require('../models/MentorProfile.model');
 const UserProfile = require('../models/UserProfile.model');
 const PaymentDetails = require('../models/PaymentDetails.model');
 
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
 function convertToDateTime(dateTimeString) {
     const [datePart, timePart] = dateTimeString.split(" ");
     const fullDateTimeString = `${datePart} ${timePart}`;
@@ -33,7 +36,7 @@ exports.BookAppointment = async (req, res) => {
         slot = convertToDateTime(slot);
 
         // Validate that all required fields are present
-        if (!mentorProfileId || !userProfileId || !slot ) {
+        if (!mentorProfileId || !userProfileId || !slot || !paymentDetails ) {
             return res.status(400).json({
                 success: false,
                 message: 'All fields are required for booking'
@@ -67,8 +70,26 @@ exports.BookAppointment = async (req, res) => {
             });
         }
 
+        // Validate payment details
+        const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = paymentDetails;
 
-        const paymentData=await PaymentDetails.findOneAndUpdate({razorpay_order_id:paymentDetails.razorpay_order_id},paymentDetails);
+        const body_data = razorpay_order_id + "|" + razorpay_payment_id;
+
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_SECTERT_KEY)
+            .update(body_data)
+            .digest('hex');
+
+        const isValid = expectedSignature === razorpay_signature;
+
+        if(!isValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid payment signature'
+            });
+        }
+
+        const paymentData=await PaymentDetails.findOneAndUpdate({razorpay_order_id:razorpay_order_id},paymentDetails);
         if (!paymentData) {
             return res.status(404).json({   
                 success: false,
@@ -136,7 +157,7 @@ exports.myAppointment = async (req, res) => {   //for mentor
         const userId = req.user._id;
         const mentorProfileId=await MentorProfile.findOne({user: userId});
 
-        console.log('Mentor Profile ID:', mentorProfileId);
+        // console.log('Mentor Profile ID:', mentorProfileId);
 
         // Fetch appointments associated with the mentor profile
         const myAppointments = await Appointment.find({ mentorId: mentorProfileId })
@@ -194,5 +215,120 @@ exports.updateStatusAppointment=async(req,res)=>{
             success: false,
             message: 'in aproveAppointment Server error',
         })
+    }
+}
+
+
+exports.paymentSlip = async (req, res) => {
+  try {
+    const { razorpay_payment_id } = req.params;
+    console.log(razorpay_payment_id);
+
+    // Step 1: Find the payment details by order ID
+    const paymentDetails = await PaymentDetails.findOne({ razorpay_payment_id });
+
+    if (!paymentDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment details not found'
+      });
+    }
+
+    // Step 2: Find the appointment associated with this payment
+    const appointment = await Appointment.findOne({ paymentDetails: paymentDetails._id })
+      .populate('userId', 'name email phone profilePic')
+      .populate('mentorId', 'name title profilePic');
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment associated with this payment not found'
+      });
+    }
+
+    // Step 3: Return a consolidated payment slip
+    return res.status(200).json({
+      success: true,
+      message: 'Payment slip fetched successfully',
+      slip: {
+        paymentId: paymentDetails._id,
+        amount: paymentDetails.amount,
+        razorpay_payment_id: paymentDetails.razorpay_payment_id,
+        razorpay_order_id: paymentDetails.razorpay_order_id,
+        razorpay_signature: paymentDetails.razorpay_signature,
+        user: {
+          name: appointment.userId.name,
+          phone: appointment.userId.phone,
+          profilePic: appointment.userId.profilePic,
+        },
+        mentor: {
+          name: appointment.mentorId.name,
+          title: appointment.mentorId.title,
+          profilePic: appointment.mentorId.profilePic,
+        },
+        slot: appointment.slot,
+        status: appointment.status,
+        roomNo: appointment.roomNo,
+      }
+    });
+
+  } catch (error) {
+    console.error('Error generating payment slip:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while generating payment slip'
+    });
+  }
+};
+
+
+exports.slotIsAvailable = async (req, res) => {
+    try {
+        const { mentorId, slot } = req.body;
+        console.log(req.body);
+
+        if(!mentorId || !slot){
+            return res.status(400).json({
+                message:'All fields are Required!!',
+                success:false,
+            })
+        }
+
+        // Convert slot to DateTime
+        const slotDateTime = convertToDateTime(slot);
+        if (!slotDateTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid slot format'
+            });
+        }
+
+        // Check if the mentor is already booked for this slot
+        const existingAppointment = await Appointment.findOne({
+            mentorId: mentorId,
+            slot: slotDateTime
+        });
+
+        if (existingAppointment) {
+            return res.status(200).json({
+                success: false,
+                message: 'Slot is already booked',
+                isAvailable: false
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Slot is available',
+            isAvailable: true
+        });
+
+    } catch (error) {
+        console.error('Error checking slot availability:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while checking slot availability',
+            isAvailable:false,
+        });
     }
 }
