@@ -4,7 +4,7 @@ const TempUser = require('../models/TempUser.model'); // Temporary user model
 const User = require('../models/User.model'); // Main user model
 const { sendEmail } = require('../services/emailService');
 const jwt = require('jsonwebtoken');
-const authService=require('../services/authService');
+const authService = require('../services/authService');
 const imageUpload = require('../utils/imageUpload'); // for uploading image
 
 
@@ -218,14 +218,16 @@ exports.login = async (req, res) => {
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
 
         // Set token in a cookie (HttpOnly for security)
-        res.cookie('token', token, {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'rohit', // Use HTTPS in production
-            sameSite: 'None', // Required for cross-origin requests
-            maxAge: 12 * 60 * 60 * 1000, //12hr
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "None",
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        user.password=undefined;
+
+        user.password = undefined;
 
         return res.status(200).json({
             success: true,
@@ -373,7 +375,7 @@ exports.resetPassword = async (req, res) => {
 };
 
 
-exports.isUser=async (req, res) => {
+exports.isUser = async (req, res) => {
     try {
         const user = req.user; // User data from middleware
         if (!user) {
@@ -383,12 +385,12 @@ exports.isUser=async (req, res) => {
             });
         }
 
-        if(user.role !== 'USER') {
+        if (user.role !== 'USER') {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied. Only users can access this route.',
             });
-        }   
+        }
 
         return res.status(200).json({
             success: true,
@@ -408,9 +410,10 @@ exports.isUser=async (req, res) => {
 exports.logout = async (req, res) => {
   try {
     res.clearCookie("token", {
-      httpOnly: false, // must match how cookie was set
-      secure: process.env.NODE_ENV === "rohit", // same condition as login
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "None",
+      path: "/",
     });
 
     return res.status(200).json({
