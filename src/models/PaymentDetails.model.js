@@ -19,6 +19,12 @@ const PaymentDetailsSchema=new mongoose.Schema({
         type: String,
         default:null,
     },
+    status: {
+      type: String,
+      enum: ["Initiate", "Pending", "Failed", "Complete"],
+      default: "Initiate",
+      required: true,
+    },
 },{timestamps:true});
 
 const PaymentDetails=mongoose.model('PaymentDetails',PaymentDetailsSchema);

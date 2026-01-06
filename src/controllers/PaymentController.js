@@ -1,89 +1,101 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
-const PaymentDatails=require('../models/PaymentDetails.model');
-require('dotenv').config();
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+const PaymentDetails = require("../models/PaymentDetails.model");
+require("dotenv").config();
 
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_SECTERT_KEY,
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET_KEY,
 });
 
-
-
 exports.payment_checkout = async (req, res) => {
-    try {
-        const { name, amount } = req.body;
+  try {
+    const { name, amount } = req.body;
 
-        if (!name || !amount) {
-            return res.status(400).json({
-                success: false,
-                message: 'All fields are Required!!'
-            });
-        }
-        
-        const num = parseInt(amount, 10);
-
-        const order = await razorpay.orders.create({
-            amount: Number(num * 100), // amount in paisa
-            currency: "INR",
-        });
-
-        await PaymentDatails.create({
-            name: name,
-            amount: num,
-            razorpay_order_id: order.id
-        });
-
-        res.status(200).json({ order: order });
-    } catch (error) {
-        console.error("Error in checkout routes:", error);  // Log full error object
-        res.status(500).json({
-            success: false,
-            message: `Error in checkout routes: ${error.message || error}` // Extract the error message
-        });
+    if (!name || !amount || isNaN(amount)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid name and amount are required",
+      });
     }
+
+    const numAmount = Number(amount);
+
+    const order = await razorpay.orders.create({
+      amount: numAmount * 100, // paisa
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    });
+
+    await PaymentDetails.create({
+      name,
+      amount: numAmount,
+      razorpay_order_id: order.id,
+      status: "Pending",
+    });
+
+    res.status(200).json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error("Checkout Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Payment checkout failed",
+    });
+  }
 };
 
 
-exports.payment_verification=async (req, res) => {
-    try {
-        const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 
-        const body_data = razorpay_order_id + "|" + razorpay_payment_id;
+exports.payment_verification = async (req, res) => {
+  try {
+    const {
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
+    } = req.body;
 
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_SECTERT_KEY)
-            .update(body_data)
-            .digest('hex');
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 
-        const isValid = expectedSignature === razorpay_signature;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY)
+      .update(body)
+      .digest("hex");
 
-        if (isValid) {
-            // update in DB
-            await PaymentDatails.findOneAndUpdate(
-                { order_id: razorpay_order_id },
-                {
-                    $set: {
-                        razorpay_payment_id: razorpay_payment_id,
-                        razorpay_order_id: razorpay_order_id,
-                        razorpay_signature: razorpay_signature,
-                    }
-                }
-            );
+    const isValid = expectedSignature === razorpay_signature;
 
-            res.redirect(`${process.env.frontend_user_url}/success?payment_id=${razorpay_payment_id}`);
-        } else {
-            res.redirect(`${process.env.frontend_user_url}/failed`);
-        }
+    if (!isValid) {
+      await PaymentDetails.findOneAndUpdate(
+        { razorpay_order_id },
+        { status: "Failed" }
+      );
 
-    } catch (error) {
-        console.log(`Error in payment verification, Error: ${error}`);
-        res.json({
-            success: false,
-            message: `Error in payment verification, Error: ${error.message}`
-        });
+      return res.redirect(`${process.env.frontend_user_url}/failed`);
     }
+
+    await PaymentDetails.findOneAndUpdate(
+      { razorpay_order_id },
+      {
+        razorpay_payment_id,
+        razorpay_signature,
+        status: "Complete",
+      }
+    );
+
+    res.redirect(
+      `${process.env.frontend_user_url}/success?payment_id=${razorpay_payment_id}`
+    );
+  } catch (error) {
+    console.error("Verification Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Payment verification failed",
+    });
+  }
 };
+
 
 
 

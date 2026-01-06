@@ -29,22 +29,6 @@ app.use(fileupload({
     tempFileDir:'/tmp/'
 }));
 
-//for video call and chat 
-// const http = require('http');
-// const { Server } = require('socket.io');
-// const socketSetup = require('./services/socket');
-
-// const server = http.createServer(app);
-// const io = new Server(server, {
-//   cors: {
-//     origin: '*',
-//   },
-// });
-
-// socketSetup(io);
-
-
-
 // // route import and mount
 
 app.get('/',(req,res)=>{
