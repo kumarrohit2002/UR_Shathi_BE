@@ -50,7 +50,7 @@ exports.createUserProfile = async (req, res) => {
             await userProfile.save();
 
             user.userProfile = userProfile._id;
-            await user.save();
+            
 
             return res.status(201).json({
                 success: true,
