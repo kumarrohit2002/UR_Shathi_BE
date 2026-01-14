@@ -47,7 +47,6 @@ exports.createOrUpdateMentorProfile = async (req, res) => {
 
             // Update user with mentor profile reference
             user.mentorProfile = mentorProfile._id;
-            await user.save();
             message = 'Mentor profile created successfully';
         }
 
